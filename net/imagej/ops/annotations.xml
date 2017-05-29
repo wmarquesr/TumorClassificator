@@ -1,0 +1,5 @@
+<root>
+    <item name='net.imagej.ops.OpEnvironment net.imagej.ops.image.ImageNamespace image()'>
+        <annotation name='org.jetbrains.annotations.NotNull'/>
+    </item>
+</root>
