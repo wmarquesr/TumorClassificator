@@ -25,32 +25,34 @@ public class MainTest {
     public static void main(String[] args) throws IOException {
         List<String> results = new ArrayList<String>();
 
-        File[] files = new File("C:\\Users\\wesle\\Downloads\\Ref-Med\\nodulo").listFiles();
-        //If this pathname does not denote a directory, then listFiles() returns null.
+        File[] files = new File("C:\\Users\\wesle\\Documents\\Ref-Med\\nodulo").listFiles();
+        File file;
 
-        for (File file : files) {
+        for (int i = 0; i < files.length; ++i) {
+            file = files[i];
             if (file.isFile()) {
                 //extractZernickeFeature(file);
-                extractTamuraFeature(file);
+                //extractTamuraFeature(file);
+                //System.out.println(file.getName().replace(".png", ""));
+                if (file.getName().replace(".png", "").endsWith("M")){
+                    System.out.println("TRUE");
+                } else if (file.getName().replace(".png", "").endsWith("B")) {
+                    System.out.println("FALSE");
+                }
             }
         }
     }
 
     public static void extractZernickeFeature(File imageFile) throws IOException {
         ImageJ ij = new ImageJ();
-        //File file = ij.ui().chooseFile(null, "Open");
-        //File file = new File("C:\\Users\\wesle\\Downloads\\Ref-Med\\nodulo\\e3n0r0B.png");
         Dataset dataset = ij.scifio().datasetIO().open(imageFile.getPath());
-        //ij.ui().show(dataset);
         ModuleInfo module = ij.command().getCommand(TypeChanger.class);
         Map<String, Object> input = new HashMap<String, Object>();
         input.put("data", dataset);
         input.put("typeName", "8-bit unsigned integer");
         input.put("combineChannels", true);
         ij.module().waitFor(ij.module().run(module, true, input));
-        // ij.op().haralick, ij.op().zernike, ij.op().tamura, ij.op().stats estes são os descritores que possuem
-        // os atributos
-        DoubleType value = ij.op().zernike().magnitude((IterableInterval<DoubleType>)dataset.getImgPlus(), 0,0);
+        DoubleType value = ij.op().zernike().phase((IterableInterval<DoubleType>)dataset.getImgPlus(), 0,0);
         System.out.println(value);
     }
 
@@ -69,7 +71,6 @@ public class MainTest {
         int histogramSize = img.getStatistics().histogram.length;
         //OpService ops = null;
         //Long histogramSize = ops.image().histogram((IterableInterval<DoubleType>) dataset.getImgPlus()).size();
-
         DoubleType value = ij.op().tamura().directionality((RandomAccessibleInterval<DoubleType>) dataset.getImgPlus(),histogramSize);
         System.out.println(value);
 
