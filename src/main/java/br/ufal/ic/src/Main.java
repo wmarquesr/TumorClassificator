@@ -53,37 +53,69 @@ public class Main {
         File[] filesPath = new File("C:\\Users\\wesle\\Documents\\Ref-Med\\nodulo").listFiles();
         System.out.println(filesPath.length);
         File file = filesPath[0];
+
+        /* --------- Array para armazernar o conjunto do mesmo exame -------------*/
+        ArrayList<File> exam = new ArrayList<>();
+        int atual_e= -1;
+        int atual_n= -1;
+
+        /* --------- File Counter -------------*/
+        int processedFile=0;
+
         for (int i = 0; i < filesPath.length; ++i) {
-            file = filesPath[i];
-            Dataset dataset = ij.scifio().datasetIO().open(file.getPath());
-            Map<String, Object> input = new HashMap<String, Object>();
 
-            input.put("data", dataset);
-            input.put("typeName", "8-bit unsigned integer");
-            input.put("combineChannels", true);
-            ij.module().waitFor(ij.module().run(module, true, input));
+            /* --------- Captura as informações dos nome da imagem pelo regex -------------*/
+            Integer e = Integer.parseInt(file.getName().replaceAll("e(\\d+)n\\d+r\\d+[A-Z]\\.png", "$1"));
+            Integer n = Integer.parseInt(file.getName().replaceAll("e\\d+n(\\d)+r\\d+[A-Z]\\.png", "$1"));
 
-            //ArrayList<DoubleType> features = new ArrayList<DoubleType>();
+            /* --------- Captura a informação se é ou não Maligno -------------*/
+            Character X = file.getName().replaceAll("e\\d+n\\d+r\\d+([A-Z])\\.png", "$1").charAt(0);
 
-            zernikeMagnitude[i] = ij.op().zernike().magnitude((IterableInterval<DoubleType>) dataset.getImgPlus(), 0, 0);
-            //zernikePhase[i] = ij.op().zernike().phase((IterableInterval<DoubleType>) dataset.getImgPlus(),0,0);
+            if ((atual_e == -1) && (atual_n == -1)) {
+                atual_e = e;
+                atual_n = n;
+            }
 
-            int histogramSize = new Opener().openImage(file.getPath()).getStatistics().histogram.length;
-            tamuraCoarseness[i] = ij.op().tamura().coarseness((RandomAccessibleInterval<DoubleType>) dataset.getImgPlus());
-            tamuraContrast[i] = ij.op().tamura().contrast((RandomAccessibleInterval<DoubleType>) dataset.getImgPlus());
-            tamuraDirectionality[i] = ij.op().tamura().directionality((RandomAccessibleInterval<DoubleType>) dataset.getImgPlus(),histogramSize);
+            processedFile++;
 
-            //imagejStatsGeometricMean[i] = ij.op().stats().geometricMean((Iterable<DoubleType>) dataset.getImgPlus());
-            //imagejStatsHarmonicMean[i] = ij.op().stats().harmonicMean((Iterable<DoubleType>) dataset.getImgPlus());
+            if ((atual_e == e && atual_n == n)) exam.add(file);
+            else {
 
-            imagejStatsMean[i] = ij.op().stats().mean((Iterable<DoubleType>) dataset.getImgPlus());
-            imagejStatsKurtosis[i] = ij.op().stats().kurtosis((Iterable<DoubleType>) dataset.getImgPlus());
-            // features.add(ij.op().stats().median((Iterable<DoubleType>) dataset.getImgPlus())); // precisão sempre 0
-            imagejStatsStdDev[i] = ij.op().stats().stdDev((Iterable<DoubleType>) dataset.getImgPlus());
-            imagejStatsVariance[i] = ij.op().stats().variance((Iterable<DoubleType>) dataset.getImgPlus());
+                int slice = exam.size()/2;
 
-            System.out.println(i);
+                file = filesPath[i];
+                Dataset dataset = ij.scifio().datasetIO().open(exam.get(slice).getPath());
+                Map<String, Object> input = new HashMap<String, Object>();
+
+                input.put("data", dataset);
+                input.put("typeName", "8-bit unsigned integer");
+                input.put("combineChannels", true);
+                ij.module().waitFor(ij.module().run(module, true, input));
+
+                //ArrayList<DoubleType> features = new ArrayList<DoubleType>();
+
+                zernikeMagnitude[i] = ij.op().zernike().magnitude((IterableInterval<DoubleType>) dataset.getImgPlus(), 0, 0);
+                //zernikePhase[i] = ij.op().zernike().phase((IterableInterval<DoubleType>) dataset.getImgPlus(),0,0);
+
+                int histogramSize = new Opener().openImage(file.getPath()).getStatistics().histogram.length;
+                tamuraCoarseness[i] = ij.op().tamura().coarseness((RandomAccessibleInterval<DoubleType>) dataset.getImgPlus());
+                tamuraContrast[i] = ij.op().tamura().contrast((RandomAccessibleInterval<DoubleType>) dataset.getImgPlus());
+                tamuraDirectionality[i] = ij.op().tamura().directionality((RandomAccessibleInterval<DoubleType>) dataset.getImgPlus(), histogramSize);
+
+                //imagejStatsGeometricMean[i] = ij.op().stats().geometricMean((Iterable<DoubleType>) dataset.getImgPlus());
+                //imagejStatsHarmonicMean[i] = ij.op().stats().harmonicMean((Iterable<DoubleType>) dataset.getImgPlus());
+
+                imagejStatsMean[i] = ij.op().stats().mean((Iterable<DoubleType>) dataset.getImgPlus());
+                imagejStatsKurtosis[i] = ij.op().stats().kurtosis((Iterable<DoubleType>) dataset.getImgPlus());
+                // features.add(ij.op().stats().median((Iterable<DoubleType>) dataset.getImgPlus())); // precisão sempre 0
+                imagejStatsStdDev[i] = ij.op().stats().stdDev((Iterable<DoubleType>) dataset.getImgPlus());
+                imagejStatsVariance[i] = ij.op().stats().variance((Iterable<DoubleType>) dataset.getImgPlus());
+
+                System.out.println("file = (" + processedFile + "/" + filesPath.length + ")");
+                exam.clear();
+            }
         }
+
 
         concatenateArraysFeatures();
 
