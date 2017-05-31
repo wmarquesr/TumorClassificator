@@ -28,19 +28,48 @@ public class MainTest {
         File[] files = new File("C:\\Users\\wesle\\Documents\\Ref-Med\\nodulo").listFiles();
         File file;
 
+        int X, Y, count = 0;
+        int tX = -1, tY =-1;
+        String fileName = "";
+        ArrayList<File> tempFile = new ArrayList<>();
+
         for (int i = 0; i < files.length; ++i) {
             file = files[i];
             if (file.isFile()) {
                 //extractZernickeFeature(file);
                 //extractTamuraFeature(file);
                 //System.out.println(file.getName().replace(".png", ""));
-                if (file.getName().replace(".png", "").endsWith("M")){
+                /*if (file.getName().replace(".png", "").endsWith("M")){
                     System.out.println("TRUE");
                 } else if (file.getName().replace(".png", "").endsWith("B")) {
                     System.out.println("FALSE");
+                }*/
+
+                fileName = file.getName();
+                fileName = fileName.replaceAll("[^0-9]+", " ");
+
+                X = Integer.parseInt(fileName.trim().split(" ")[0]);
+                Y = Integer.parseInt(fileName.trim().split(" ")[1]);
+
+                if (tX == -1 && tY == -1) {
+                    tX = X; tY = Y;
                 }
+
+                if (X == tX && Y == tY) {
+                    tempFile.add(file);
+                } else {
+                    System.out.println(tempFile.size());
+                    System.out.println(tempFile.get(tempFile.size()/2).getName().replace(".png", ""));
+                    count++;
+                    tX = X; tY = Y;
+                    tempFile.clear();
+                    tempFile.add(file);
+                }
+
+                //System.out.println(X + " " + Y + " " + Z);
             }
         }
+        System.out.println(count);
     }
 
     public static void extractZernickeFeature(File imageFile) throws IOException {

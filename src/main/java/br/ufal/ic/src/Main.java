@@ -25,14 +25,18 @@ import org.supercsv.prefs.CsvPreference;
  */
 public class Main {
 
-    private static int numberOfNodules = 4123;
+    private static int numberOfNodules = 920;
     private static int numberOfFeatures = 8;
+
+    private static int X, Y, count = 0;
+    private static int tX = -1, tY =-1;
+    private static String fileName = "";
+    private static ArrayList<File> tempFile = new ArrayList<>();
 
     /* ---------  Arrays for each feature -------------*/
     private static DoubleType[] allFeatures;
 
     private static DoubleType[] zernikeMagnitude = new DoubleType[numberOfNodules];
-    //private static DoubleType[] zernikePhase = new DoubleType[numberOfNodules];
 
     private static DoubleType[] tamuraCoarseness = new DoubleType[numberOfNodules];
     private static DoubleType[] tamuraContrast = new DoubleType[numberOfNodules];
@@ -52,39 +56,26 @@ public class Main {
 
         File[] filesPath = new File("C:\\Users\\wesle\\Documents\\Ref-Med\\nodulo").listFiles();
         System.out.println(filesPath.length);
-        File file = filesPath[0];
-
-        /* --------- Array para armazernar o conjunto do mesmo exame -------------*/
-        ArrayList<File> exam = new ArrayList<>();
-        int atual_e= -1;
-        int atual_n= -1;
-
-        /* --------- File Counter -------------*/
-        int processedFile=0;
-
+        File file;
+        int k = 0;
         for (int i = 0; i < filesPath.length; ++i) {
+            file = filesPath[i];
 
-            /* --------- Captura as informações dos nome da imagem pelo regex -------------*/
-            Integer e = Integer.parseInt(file.getName().replaceAll("e(\\d+)n\\d+r\\d+[A-Z]\\.png", "$1"));
-            Integer n = Integer.parseInt(file.getName().replaceAll("e\\d+n(\\d)+r\\d+[A-Z]\\.png", "$1"));
+            fileName = file.getName();
+            fileName = fileName.replaceAll("[^0-9]+", " ");
 
-            /* --------- Captura a informação se é ou não Maligno -------------*/
-            Character X = file.getName().replaceAll("e\\d+n\\d+r\\d+([A-Z])\\.png", "$1").charAt(0);
+            X = Integer.parseInt(fileName.trim().split(" ")[0]);
+            Y = Integer.parseInt(fileName.trim().split(" ")[1]);
 
-            if ((atual_e == -1) && (atual_n == -1)) {
-                atual_e = e;
-                atual_n = n;
+            if (tX == -1 && tY == -1) {
+                tX = X; tY = Y;
             }
 
-            processedFile++;
+            if (X == tX && Y == tY) {
+                tempFile.add(file);
+            } else {
 
-            if ((atual_e == e && atual_n == n)) exam.add(file);
-            else {
-
-                int slice = exam.size()/2;
-
-                file = filesPath[i];
-                Dataset dataset = ij.scifio().datasetIO().open(exam.get(slice).getPath());
+                Dataset dataset = ij.scifio().datasetIO().open(file.getPath());
                 Map<String, Object> input = new HashMap<String, Object>();
 
                 input.put("data", dataset);
@@ -92,30 +83,32 @@ public class Main {
                 input.put("combineChannels", true);
                 ij.module().waitFor(ij.module().run(module, true, input));
 
-                //ArrayList<DoubleType> features = new ArrayList<DoubleType>();
-
-                zernikeMagnitude[i] = ij.op().zernike().magnitude((IterableInterval<DoubleType>) dataset.getImgPlus(), 0, 0);
-                //zernikePhase[i] = ij.op().zernike().phase((IterableInterval<DoubleType>) dataset.getImgPlus(),0,0);
+                zernikeMagnitude[k] = ij.op().zernike().magnitude((IterableInterval<DoubleType>) dataset.getImgPlus(), 0, 0);
 
                 int histogramSize = new Opener().openImage(file.getPath()).getStatistics().histogram.length;
-                tamuraCoarseness[i] = ij.op().tamura().coarseness((RandomAccessibleInterval<DoubleType>) dataset.getImgPlus());
-                tamuraContrast[i] = ij.op().tamura().contrast((RandomAccessibleInterval<DoubleType>) dataset.getImgPlus());
-                tamuraDirectionality[i] = ij.op().tamura().directionality((RandomAccessibleInterval<DoubleType>) dataset.getImgPlus(), histogramSize);
+                tamuraCoarseness[k] = ij.op().tamura().coarseness((RandomAccessibleInterval<DoubleType>) dataset.getImgPlus());
+                tamuraContrast[k] = ij.op().tamura().contrast((RandomAccessibleInterval<DoubleType>) dataset.getImgPlus());
+                tamuraDirectionality[k] = ij.op().tamura().directionality((RandomAccessibleInterval<DoubleType>) dataset.getImgPlus(),histogramSize);
 
                 //imagejStatsGeometricMean[i] = ij.op().stats().geometricMean((Iterable<DoubleType>) dataset.getImgPlus());
                 //imagejStatsHarmonicMean[i] = ij.op().stats().harmonicMean((Iterable<DoubleType>) dataset.getImgPlus());
 
-                imagejStatsMean[i] = ij.op().stats().mean((Iterable<DoubleType>) dataset.getImgPlus());
-                imagejStatsKurtosis[i] = ij.op().stats().kurtosis((Iterable<DoubleType>) dataset.getImgPlus());
+                imagejStatsMean[k] = ij.op().stats().mean((Iterable<DoubleType>) dataset.getImgPlus());
+                imagejStatsKurtosis[k] = ij.op().stats().kurtosis((Iterable<DoubleType>) dataset.getImgPlus());
                 // features.add(ij.op().stats().median((Iterable<DoubleType>) dataset.getImgPlus())); // precisão sempre 0
-                imagejStatsStdDev[i] = ij.op().stats().stdDev((Iterable<DoubleType>) dataset.getImgPlus());
-                imagejStatsVariance[i] = ij.op().stats().variance((Iterable<DoubleType>) dataset.getImgPlus());
+                imagejStatsStdDev[k] = ij.op().stats().stdDev((Iterable<DoubleType>) dataset.getImgPlus());
+                imagejStatsVariance[k] = ij.op().stats().variance((Iterable<DoubleType>) dataset.getImgPlus());
 
-                System.out.println("file = (" + processedFile + "/" + filesPath.length + ")");
-                exam.clear();
+                ++k;
+                count++;
+                tX = X; tY = Y;
+                tempFile.clear();
+                tempFile.add(file);
             }
-        }
 
+            System.out.println(i);
+        }
+        System.out.println(count);
 
         concatenateArraysFeatures();
 
